@@ -304,15 +304,21 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
 
         $isExcept = false;
 	if ( php_sapi_name() != 'cli' && isset($_SERVER['REQUEST_URI']) ) {
-        $exceptions = ['customer', 'checkout'];
-        foreach ( $exceptions as $e ) {
+            //Exceptions where db request must be directed to master db only.
+            $exceptions = [
+                'customer',
+                'checkout',
+                'admin/sales/order_create'
+            ];
+            
+            foreach ( $exceptions as $e ) {
 
-            if ( strstr($_SERVER['REQUEST_URI'], $e) !== false) {
+                if ( strstr($_SERVER['REQUEST_URI'], $e) !== false) {
 
-                $isExcept = true;
+                    $isExcept = true;
+                }
+
             }
-
-        }
         }
 
         if( $this->isSlaveLocked === false &&
@@ -556,7 +562,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
                 // As we use default value CURRENT_TIMESTAMP for TIMESTAMP type columns we need to set GMT timezone
                 $this->_connectionSlave->query("SET time_zone = '+00:00'");
 
-                if (isset($this->_config['initStatements'])) {
+                if (isset($this->_slaveConfig['initStatements'])) {
                     $this->query($this->_slaveConfig['initStatements']);
                 }
 
