@@ -136,7 +136,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     protected $_isDdlCacheAllowed = true;
 
-	/***** Skynix MySQL Cluster Part 1 *****/
+        /***** Skynix MySQL Cluster Part 1 *****/
     /**
      * User-provided configuration slave-servers
      * @var array
@@ -171,7 +171,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
     protected $_connectionFlagsSetSlave = false;
 
     /***** Skynix MySQL Cluster END Part 1 *****/
-	
+
     /**
      * Save if mysql engine is 8 or not.
      *
@@ -290,7 +290,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         array $config = [],
         SerializerInterface $serializer = null
     ) {
-		
+
         $this->string = $string;
         $this->dateTime = $dateTime;
         $this->logger = $logger;
@@ -310,17 +310,20 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
             // SQLSTATE[42S02]: Base table or view not found: 1146
             1146 => TableNotFoundException::class,
         ];
-		
+
         try {
-			
-			/***** Skynix MySQL Cluster Part 2 *****/
+                        $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/custom.log');
+                        $logger = new \Zend_Log();
+                        $logger->addWriter($writer);
+
+
+                        /***** Skynix MySQL Cluster Part 2 *****/
             $options = array(
                 \Zend_Db::CASE_FOLDING           => $this->_caseFolding,
                 \Zend_Db::AUTO_QUOTE_IDENTIFIERS => $this->_autoQuoteIdentifiers,
                 \Zend_Db::FETCH_MODE             => $this->_fetchMode,
             );
             $driverOptions = array();
-
             /*
              * normalize the config and merge it with the defaults
              */
@@ -339,23 +342,26 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
                 }
             }
             //Cut slave server configuration
-            if ( isset( $config['slave-servers'] ) && count($config['slave-servers'])) {
-
+            if ( isset( $config['slave'] ) && count($config['slave']) >= 1) {
+                $logger->info('==== GOT Config Slave-Servers ====');
                 //Pickup random slave server
-                $this->_slaveConfig = $config['slave-servers'][round( rand(0, count($config['slave-servers']) - 1 ))];
+                $this->_slaveConfig = $config['slave'][round( rand(0, count($config['slave']) - 1 ))];
                 $this->_slaveConfig['options']          = $options;
                 $this->_slaveConfig['driver_options']   = $driverOptions;
-                unset($config['slave-servers']);
-
+                unset($config['slave']);
+                $logger->info(print_r($this->_slaveConfig, true));
+            } else {
+            /***** Skynix MySQL Cluster END Part 2 *****/
+                $logger->info('==== Got Master Config ====');
+                $logger->info(print_r($config, true));
             }
-            /***** Skynix MySQL Cluster END Part 2 *****/										 
             parent::__construct($config);
         } catch (Zend_Db_Adapter_Exception $e) {
             throw new \InvalidArgumentException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
-	/***** Skynix MySQL Cluster Part 3 *****/
+        /***** Skynix MySQL Cluster Part 3 *****/
     /**
      * This function checks if it is read only SQL or not
      * @param $sqlQuery
@@ -364,7 +370,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
     {
 
         $isExcept = false;
-	if ( php_sapi_name() != 'cli' && isset($_SERVER['REQUEST_URI']) ) {
+        if ( php_sapi_name() != 'cli' && isset($_SERVER['REQUEST_URI']) ) {
             //Exceptions where db request must be directed to master db only.
             $exceptions = [
                 'customer',
@@ -408,8 +414,8 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
 
     }
     /***** Skynix MySQL Cluster END Part 3 *****/
-	
-	
+
+
     /**
      * Begin new DB transaction for connection
      *
@@ -418,8 +424,8 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function beginTransaction()
     {
-		$this->isSlaveConnected = false;
-        $this->isSlaveLocked    = true;														   
+                $this->isSlaveConnected = false;
+        $this->isSlaveLocked    = true;                                                                                             
         if ($this->_isRolledBack) {
             // phpcs:ignore Magento2.Exceptions.DirectThrow.FoundDirectThrow
             throw new \Exception(AdapterInterface::ERROR_ROLLBACK_INCOMPLETE_MESSAGE);
@@ -441,8 +447,8 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function commit()
     {
-		$this->isSlaveConnected = false;
-        $this->isSlaveLocked    = false;															
+                $this->isSlaveConnected = false;
+        $this->isSlaveLocked    = false;
         if ($this->_transactionLevel === 1 && !$this->_isRolledBack) {
             $this->logger->startTimer();
             parent::commit();
@@ -466,8 +472,8 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function rollBack()
     {
-		$this->isSlaveConnected = false;
-        $this->isSlaveLocked    = false;															
+                $this->isSlaveConnected = false;
+        $this->isSlaveLocked    = false;
         if ($this->_transactionLevel === 1) {
             $this->logger->startTimer();
             parent::rollBack();
@@ -515,7 +521,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         return $this->formatDate($datetime, true);
     }
 
-	/***** Skynix MySQL Cluster Part 4 *****/										 
+        /***** Skynix MySQL Cluster Part 4 *****/                                                                                
     /**
      * Creates a PDO object and connects to the database.
      *
@@ -558,13 +564,13 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         }
 
         if (!isset($this->_config['driver_options'][\PDO::ATTR_STRINGIFY_FETCHES])) {
-            $this->_config['driver_options'][\PDO::ATTR_STRINGIFY_FETCHES] = true;			   
+            $this->_config['driver_options'][\PDO::ATTR_STRINGIFY_FETCHES] = true;                         
         }
 
         $this->logger->startTimer();
         //parent::_connect();
 
-		// get the dsn first, because some adapters alter the $_pdoType
+                // get the dsn first, because some adapters alter the $_pdoType
         $dsn = $this->_dsn();
 
         // check for PDO extension
@@ -574,9 +580,9 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
              */
             #require_once 'Zend/Db/Adapter/Exception.php';
             throw new \Zend_Db_Adapter_Exception('The PDO extension is required for this adapter but the extension is not loaded');
-        }				 
+        }                                
 
-		// check the PDO driver is available
+                // check the PDO driver is available
         if (!in_array($this->_pdoType, \PDO::getAvailableDrivers())) {
             /**
              * @see Zend_Db_Adapter_Exception
@@ -586,10 +592,10 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         }
 
         // create PDO connection
-        $q = $this->_profiler->queryStart('connect', \Zend_Db_Profiler::CONNECT);												  
-		
-		if ( $this->isSlaveConnected === true && !empty($this->_slaveConfig) ) {
-													 
+        $q = $this->_profiler->queryStart('connect', \Zend_Db_Profiler::CONNECT);                                                  
+
+                if ( $this->isSlaveConnected === true && !empty($this->_slaveConfig) ) {
+                                                                                                         
             // add the persistence flag if we find it in our config array
             if (isset($this->_slaveConfig['persistent']) && ($this->_slaveConfig['persistent'] == true)) {
                 $this->_slaveConfig['driver_options'][\PDO::ATTR_PERSISTENT] = true;
@@ -600,12 +606,12 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
             // add the persistence flag if we find it in our config array
             if (isset($this->_config['persistent']) && ($this->_config['persistent'] == true)) {
                 $this->_config['driver_options'][\PDO::ATTR_PERSISTENT] = true;
-												 
-										  
+                                                                                                 
+                                                                                  
             }
 
         }
-		try {
+                try {
             if ( $this->isSlaveConnected === true && !empty($this->_slaveConfig)  ) {
 
                 $this->_connectionSlave = new \PDO(
@@ -650,7 +656,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
                 if (isset($this->_slaveConfig['initStatements'])) {
                     $this->query($this->_slaveConfig['initStatements']);
                 }
-		
+
                 if (!$this->_connectionFlagsSetSlave) {
                     $this->_connectionSlave->setAttribute(\PDO::ATTR_EMULATE_PREPARES, true);
                     $this->_connectionSlave->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
@@ -702,7 +708,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
 
 
     }
-    /***** Skynix MySQL Cluster END Part 4 *****/										 
+    /***** Skynix MySQL Cluster END Part 4 *****/                                                                                
 
     /**
      * Create new database connection
@@ -802,8 +808,8 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     protected function _query($sql, $bind = [])
     {
-		$this->isReadOnlyRequest( $sql );
-        $this->_connect();								 
+                $this->isReadOnlyRequest( $sql );
+        $this->_connect();                                                               
         $connectionErrors = [
             2006, // SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
             2013,  // SQLSTATE[HY000]: General error: 2013 Lost connection to MySQL server during query
@@ -844,7 +850,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
                     $triesCount++;
                     $this->closeConnection();
 
-					  /**
+                                          /**
                      * _connect() function does not allow port parameter, so put the port back with the host
                      */
                     if (!empty($this->_config['port'])) {
@@ -934,11 +940,11 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         }
 
         // Mixed bind is not supported - so remember whether it is named bind, to normalize later if required
-		$isNamedBind = false;					 
+                $isNamedBind = false;                                    
         if ($bind) {
             foreach ($bind as $k => $v) {
                 if (!is_int($k)) {
-					$isNamedBind = true;					
+                                        $isNamedBind = true;
                     if ($k[0] != ':') {
                         $bind[":{$k}"] = $v;
                         unset($bind[$k]);
@@ -1147,7 +1153,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function dropForeignKey($tableName, $fkName, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $foreignKeys = $this->getForeignKeys($tableName, $schemaName);
         $fkName = $fkName !== null ? strtoupper($fkName) : '';
         if (substr($fkName, 0, 3) == 'FK_') {
@@ -1185,7 +1191,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         $refColumnName,
         $onDelete = AdapterInterface::FK_ACTION_CASCADE
     ) {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $onDelete = strtoupper($onDelete);
         if ($onDelete == AdapterInterface::FK_ACTION_CASCADE
             || $onDelete == AdapterInterface::FK_ACTION_RESTRICT
@@ -1250,7 +1256,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function addColumn($tableName, $columnName, $definition, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $this->getSchemaListener()->addColumn($tableName, $columnName, $definition);
         if ($this->tableColumnExists($tableName, $columnName, $schemaName)) {
             return true;
@@ -1293,7 +1299,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function dropColumn($tableName, $columnName, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         if (!$this->tableColumnExists($tableName, $columnName, $schemaName)) {
             return true;
         }
@@ -1346,7 +1352,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     protected function _getIndexByColumns($tableName, array $columns, $schemaName)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         foreach ($this->getIndexList($tableName, $schemaName) as $idxData) {
             if ($idxData['COLUMNS_LIST'] === $columns) {
                 return $idxData;
@@ -1377,7 +1383,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         $flushData = false,
         $schemaName = null
     ) {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $this->getSchemaListener()->changeColumn(
             $tableName,
             $oldColumnName,
@@ -1429,7 +1435,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function modifyColumn($tableName, $columnName, $definition, $flushData = false, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $this->getSchemaListener()->modifyColumn(
             $tableName,
             $columnName,
@@ -2235,7 +2241,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function insertForce($table, array $bind)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $this->rawQuery("SET @OLD_INSERT_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO'");
         $result = $this->insert($table, $bind);
         $this->rawQuery("SET SQL_MODE=IFNULL(@OLD_INSERT_SQL_MODE,'')");
@@ -2256,7 +2262,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function insertOnDuplicate($table, array $data, array $fields = [])
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         // extract and quote col names from the array keys
         $row    = reset($data); // get first element from data array
         $bind   = []; // SQL bind array
@@ -2330,7 +2336,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function insertMultiple($table, array $data)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $row = reset($data);
         // support insert syntaxes
         if (!is_array($row)) {
@@ -2376,7 +2382,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function insertArray($table, array $columns, array $data, $strategy = 0)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $values       = [];
         $bind         = [];
         $columnsCount = count($columns);
@@ -2487,7 +2493,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function createTemporaryTable(\Magento\Framework\DB\Ddl\Table $table)
     {
-		$columns = $table->getColumns();								
+                $columns = $table->getColumns();
         $sqlFragment    = array_merge(
             $this->_getColumnsDefinition($table),
             $this->_getIndexesDefinition($table),
@@ -2894,7 +2900,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function dropTable($tableName, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $table = $this->quoteIdentifier($this->_getTableName($tableName, $schemaName));
         $query = 'DROP TABLE IF EXISTS ' . $table;
         if ($this->getTransactionLevel() > 0) {
@@ -2916,7 +2922,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function dropTemporaryTable($tableName, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $table = $this->quoteIdentifier($this->_getTableName($tableName, $schemaName));
         $query = 'DROP TEMPORARY TABLE IF EXISTS ' . $table;
         $this->query($query);
@@ -2934,7 +2940,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function truncateTable($tableName, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         if (!$this->isTableExists($tableName, $schemaName)) {
             throw new \Zend_Db_Exception(sprintf('Table "%s" does not exist', $tableName));
         }
@@ -2992,7 +2998,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function renameTable($oldTableName, $newTableName, $schemaName = null)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         if (!$this->isTableExists($oldTableName, $schemaName)) {
             throw new \Zend_Db_Exception(sprintf('Table "%s" does not exist', $oldTableName));
         }
@@ -3238,7 +3244,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function startSetup()
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         $this->rawQuery("SET SQL_MODE=''");
         $this->rawQuery("SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0");
         $this->rawQuery("SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO'");
@@ -3368,7 +3374,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
     {
         $text = str_replace('{{fieldName}}', (string)$fieldName, (string)$text);
         $sql = $this->quoteInto($text, $value);
-															  
+                                                                                                                          
         return $sql;
     }
 
@@ -3846,7 +3852,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function insertFromSelect(Select $select, $table, array $fields = [], $mode = false)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
 
         $query = $mode === self::REPLACE ? 'REPLACE' : 'INSERT';
 
@@ -3950,7 +3956,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
      */
     public function updateFromSelect(Select $select, $table)
     {
-		$this->isSlaveConnected = false;								
+                $this->isSlaveConnected = false;
         if (!is_array($table)) {
             $table = [$table => $table];
         }
@@ -4411,15 +4417,20 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
         }
         return $this->schemaListener;
     }
-	
-	/***** Skynix MySQL Cluster Part 5 *****/
+
+        /***** Skynix MySQL Cluster Part 5 *****/
     public function getConnection()
     {
         $this->_connect();
         return $this->isSlaveConnected === true && $this->isSlaveLocked === false ? $this->_connectionSlave : $this->_connection;
-    }										 
-								   
-	 protected function _dsn()
+    }                                                                            
+                                                                   
+        /**
+     * Creates a PDO DSN for the adapter from $this->_config settings.
+     *
+     * @return string
+     */
+    protected function _dsn()
     {
         // baseline of DSN parts
         $dsn = $this->isSlaveConnected === true && $this->_slaveConfig && $this->isSlaveLocked === false ? $this->_slaveConfig : $this->_config;
@@ -4437,16 +4448,12 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
             $dsn[$key] = "$key=$val";
         }
 
-        $dsn = $this->_pdoType . ':' . implode(';', $dsn);
-        if (isset($this->_config['charset'])) {
-            $dsn .= ';charset=' . $this->_config['charset'];
-        }
-        return $dsn;
+        return $this->_pdoType . ':' . implode(';', $dsn);
     }
     /***** Skynix MySQL Cluster END Part 5 *****/
-						  
-																																 
-	 
+                                                  
+                                                                                                                                  
+         
 
     /**
      * Closes the connection.
@@ -4459,11 +4466,11 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
          * _connect() function does not allow port parameter, so put the port back with the host
          */
         if (!empty($this->_config['port'])) {
-            $this->_config['host'] = implode(':', [$this->_config['host'], $this->_config['port']]);							   
+            $this->_config['host'] = implode(':', [$this->_config['host'], $this->_config['port']]);                                
             unset($this->_config['port']);
         }
         parent::closeConnection();
     }
-												 
+                                                                                                 
 
 }
