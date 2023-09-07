@@ -1,5 +1,5 @@
 {
-    "name": "myvitamins/m2-mysql-cluster",
+    "name": "MST/m2-mysql-cluster",
     "type": "library",
     "license": "OSL-3.0",
     "description": "Magento 2 CE SQL cluster enabled Magento 2 CE to work with database replication",
@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "php": "~5.5.0|~5.6.0|~7.0.0|~7.1.0|~7.2.0"
+        "php": "~5.5.0|~5.6.0|~7.0.0|~7.1.0|~7.2.0|~8.2"
     },
     "autoload": {
         "files": [
