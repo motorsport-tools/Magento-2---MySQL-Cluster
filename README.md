@@ -6,24 +6,40 @@
 
 Navigate to section `db -> connection -> default`
 
-add a new section:
+add a new section in default:
 
-    'slave-servers' =>
-       [
-          0 =>
-           [
-              'host' => '<mysql_slave_server>',
-              'dbname' => '<mysql_slave_db_name>',
-              'username' => '<mysql_user_name>',
-              'password' => '<mysql_user_pass>',
-              'model' => 'mysql4',
-              'engine' => 'innodb',
-              'initStatements' => 'SET NAMES utf8;',
-              'active' => '1',
-           ]
-       ]
+'connection' => [
+            'default' => [
+                'host' => '',
+                'dbname' => '',
+                'username' => '',
+                'password' => '',
+                'model' => 'mysql4',
+                'engine' => 'innodb',
+                'initStatements' => 'SET NAMES utf8;',
+                'active' => '1',
+                'driver_options' => [
+                    1014 => false
+                ],
+                'slave' => [
+                    [
+                        'host' => '',
+                        'dbname' => '',
+                        'username' => '',
+                        'password' => '',
+                        'model' => 'mysql4',
+                        'engine' => 'innodb',
+                        'initStatements' => 'SET NAMES utf8;',
+                        'active' => '1',
+                        'driver_options' => [
+                            1014 => false
+                        ]
+                    ]
+                ]
+            ]
+        ]
 
-Add there as many slave servers as you have.
+Add there as many slave servers as you need.
 
 3. `bin/magento deploy:mode:set production`
  
