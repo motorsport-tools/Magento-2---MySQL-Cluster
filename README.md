@@ -1,7 +1,7 @@
 ## Magento 2 MySQL Cluster
 # Installation Instructions
 
-1. composer require `myvitamins/m2-mysql-cluster`
+1. composer require `MST/m2-mysql-cluster`
 2. add configuration into app/etc/env.php
 
 Navigate to section `db -> connection -> default`
