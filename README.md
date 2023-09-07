@@ -7,7 +7,7 @@
 Navigate to section `db -> connection -> default`
 
 add a new section in default:
-
+`
 'connection' => [
             'default' => [
                 'host' => '',
@@ -19,7 +19,7 @@ add a new section in default:
                 'initStatements' => 'SET NAMES utf8;',
                 'active' => '1',
                 'driver_options' => [
-                    1014 => false
+                        1014 => false
                 ],
                 'slave' => [
                     [
@@ -38,7 +38,7 @@ add a new section in default:
                 ]
             ]
         ]
-
+`
 Add there as many slave servers as you need.
 
 3. `bin/magento deploy:mode:set production`
