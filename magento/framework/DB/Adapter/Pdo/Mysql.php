@@ -378,7 +378,7 @@ class Mysql extends \Zend_Db_Adapter_Pdo_Mysql implements AdapterInterface
                 'admin/sales/order_create',
                 'patients/profile/sendclaimaccountemail',
                 'admin/integration',
-                'dispensary/recommendation'
+                'health_check.php',
             ];
             
             foreach ( $exceptions as $e ) {
