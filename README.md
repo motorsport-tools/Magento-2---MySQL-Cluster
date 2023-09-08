@@ -7,6 +7,7 @@ Have reworked all the code, re-created from the 2.4.6-p2 Framework Adapter/Pdo/M
 It does connect to all databased, not sure how this was initially meant to be set up by Original owner. But with Maria DB replication - slave is readonly. 
 
  - Need to rework and tighten what situation the slave(s) can be used.
+ - Remove debug logger when done.
 
 # Done
 - Rework and combine original to updated Magento Framework Pdo/Mysql.php
