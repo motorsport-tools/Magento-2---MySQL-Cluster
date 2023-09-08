@@ -7,7 +7,7 @@
 Navigate to section `db -> connection -> default`
 
 add a new section in default:
-`
+```
 'connection' => [
             'default' => [
                 'host' => '',
@@ -38,7 +38,8 @@ add a new section in default:
                 ]
             ]
         ]
-`
+```
+        
 Add there as many slave servers as you need.
 
 3. `bin/magento deploy:mode:set production`
